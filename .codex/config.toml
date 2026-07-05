@@ -1,0 +1,7 @@
+[workspace]
+name = "yijie-admin-web"
+stack = "Vue 3 + Vite + TypeScript + Pinia + Vue Router"
+
+[rules]
+contract_first = true
+no_platform_tokens_in_frontend = true
