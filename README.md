@@ -1,6 +1,6 @@
 # yijie-admin-web
 
-易界 AI 内部管理后台，使用 Vue 3、Vite、TypeScript、Pinia、Vue Router 和 pnpm。
+易界 AI 内部管理后台，使用 Vue 3、Vite、TypeScript、Pinia、Vue Router、Element Plus 和 pnpm。
 
 ## 仓库职责
 

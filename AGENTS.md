@@ -14,7 +14,7 @@
 
 ## 技术栈
 
-Vue 3、Vite、TypeScript、Pinia、Vue Router、pnpm。
+Vue 3、Vite、TypeScript、Pinia、Vue Router、Element Plus、pnpm。
 
 ## 开发命令
 

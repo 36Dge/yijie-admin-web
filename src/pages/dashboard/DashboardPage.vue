@@ -1,54 +1,83 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import {
+  ElAside,
+  ElCard,
+  ElCol,
+  ElContainer,
+  ElMain,
+  ElMenu,
+  ElMenuItem,
+  ElRow,
+  ElTag,
+} from 'element-plus'
+import 'element-plus/es/components/aside/style/css'
+import 'element-plus/es/components/card/style/css'
+import 'element-plus/es/components/col/style/css'
+import 'element-plus/es/components/container/style/css'
+import 'element-plus/es/components/main/style/css'
+import 'element-plus/es/components/menu/style/css'
+import 'element-plus/es/components/menu-item/style/css'
+import 'element-plus/es/components/row/style/css'
+import 'element-plus/es/components/tag/style/css'
 import { useAppStore } from '../../stores/app'
 import { adminRepositorySummaries } from '../../domain/repositories'
 
 const appStore = useAppStore()
 const { productName, environment } = storeToRefs(appStore)
+
+const navItems = [
+  { index: 'overview', label: '总览' },
+  { index: 'tenants', label: '租户' },
+  { index: 'skills', label: 'Skills' },
+  { index: 'knowledge', label: '知识库' },
+  { index: 'audit', label: '审计' },
+]
 </script>
 
 <template>
-  <main class="admin-shell">
-    <aside class="sidebar">
+  <el-container class="admin-shell">
+    <el-aside class="sidebar" width="240px">
       <strong>{{ productName }}</strong>
-      <nav>
-        <a href="#overview">总览</a>
-        <a href="#tenants">租户</a>
-        <a href="#skills">Skills</a>
-        <a href="#knowledge">知识库</a>
-        <a href="#audit">审计</a>
-      </nav>
-    </aside>
+      <el-menu class="nav-menu" default-active="overview">
+        <el-menu-item v-for="item in navItems" :key="item.index" :index="item.index">
+          <span>{{ item.label }}</span>
+        </el-menu-item>
+      </el-menu>
+    </el-aside>
 
-    <section class="workspace">
-      <header>
+    <el-main class="workspace">
+      <header class="page-header">
         <div>
           <p class="eyebrow">Local Environment: {{ environment }}</p>
           <h1>管理后台工程骨架</h1>
         </div>
+        <el-tag type="success" effect="plain">Element Plus</el-tag>
       </header>
 
-      <section id="overview" class="panel">
-        <h2>职责边界</h2>
+      <el-card id="overview" shadow="never">
+        <template #header>
+          <h2>职责边界</h2>
+        </template>
         <p>Admin Web 只负责内部治理和运营管理，不承载卖家桌面端体验或连接器执行逻辑。</p>
-      </section>
+      </el-card>
 
-      <section class="grid">
-        <article v-for="repo in adminRepositorySummaries" :key="repo.name" class="panel">
-          <p class="eyebrow">{{ repo.owner }}</p>
-          <h2>{{ repo.name }}</h2>
-          <p>{{ repo.purpose }}</p>
-        </article>
-      </section>
-    </section>
-  </main>
+      <el-row :gutter="16" class="repo-grid">
+        <el-col v-for="repo in adminRepositorySummaries" :key="repo.name" :xs="24" :md="8">
+          <el-card shadow="never" class="repo-card">
+            <p class="eyebrow">{{ repo.owner }}</p>
+            <h2>{{ repo.name }}</h2>
+            <p>{{ repo.purpose }}</p>
+          </el-card>
+        </el-col>
+      </el-row>
+    </el-main>
+  </el-container>
 </template>
 
 <style scoped>
 .admin-shell {
-  display: grid;
   min-height: 100vh;
-  grid-template-columns: 240px 1fr;
 }
 
 .sidebar {
@@ -63,23 +92,32 @@ const { productName, environment } = storeToRefs(appStore)
   font-size: 18px;
 }
 
-nav {
-  display: grid;
-  gap: 10px;
+.nav-menu {
+  border-right: 0;
+  background: transparent;
 }
 
-nav a {
+.nav-menu :deep(.el-menu-item) {
+  height: 40px;
   color: #c8d1dc;
-  text-decoration: none;
+  border-radius: 6px;
+}
+
+.nav-menu :deep(.el-menu-item.is-active),
+.nav-menu :deep(.el-menu-item:hover) {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .workspace {
   padding: 32px;
 }
 
-header {
+.page-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
@@ -94,6 +132,7 @@ h1 {
 }
 
 h2 {
+  margin-bottom: 0;
   font-size: 18px;
 }
 
@@ -104,32 +143,27 @@ h2 {
   text-transform: uppercase;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+.repo-grid {
   margin-top: 16px;
 }
 
-.panel {
-  padding: 20px;
-  border: 1px solid #dbe2ef;
-  border-radius: 8px;
-  background: #ffffff;
+.repo-card {
+  min-height: 150px;
 }
 
-.panel p:last-child {
+.repo-card p:last-child,
+.el-card p:last-child {
   margin-bottom: 0;
   color: #5b6472;
 }
 
 @media (max-width: 760px) {
   .admin-shell {
-    grid-template-columns: 1fr;
+    display: block;
   }
 
-  .grid {
-    grid-template-columns: 1fr;
+  .sidebar {
+    width: 100% !important;
   }
 }
 </style>
