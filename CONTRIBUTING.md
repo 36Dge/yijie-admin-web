@@ -2,9 +2,9 @@
 
 ## 开发流程
 
-1. 从 `main` 拉分支；
+1. 从 `develop` 拉分支；
 2. 修改页面、状态、API 或文档；
-3. 运行 `pnpm lint` 和 `pnpm build`；
+3. 运行 `pnpm lint`、`pnpm test` 和 `pnpm build`；
 4. 涉及接口时先更新 `yijie-contracts`；
 5. 提交 PR。
 
