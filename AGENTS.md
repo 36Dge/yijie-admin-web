@@ -22,7 +22,7 @@
 
 - 当前只有登录页、Dashboard、基础路由、store 和 API client 骨架；
 - `src/api/client.ts` 当前返回占位响应，不代表认证、权限或真实后端已经接通；
-- `pnpm generate` 当前是占位命令，不代表 SDK 已经生成；
+- `pnpm generate` 当前是占位命令，且没有 contract lock/generate-drift CI，不代表 SDK 已经生成或满足不可变消费和发布门禁；
 - 前端鉴权、后端 RBAC、审计和会话机制尚未形成完整闭环，不能基于页面外观声称已具备安全控制。
 
 ## 代码组织
@@ -50,11 +50,17 @@
 
 ## 契约与 API
 
-- 后端契约以 `yijie-contracts` 为源，先修改并评审 OpenAPI/Schema，再运行生成或适配流程；
+- 每个任务先标记 `contract-impact = none | additive | semantic | breaking`；分类覆盖跨进程、跨仓、跨版本及持久化边界，`none` 必须说明 Admin、后端及持久化浏览器状态均无可观察变化；
+- 按 `breaking > semantic > additive > none` 的最高风险唯一选择；任一受支持交互可能失效即 breaking，不确定时不能假定 additive/none；
+- 后端契约以 `yijie-contracts` 为源，先修改/评审 OpenAPI/Schema 并形成不可变 tag 或完整 commit，本仓固定精确引用后相关实现才可合并或启用；
 - 不手写与已发布契约重复的 DTO，不直接编辑生成文件；
 - 当前占位 API client 应在接入真实接口时被明确替换或隔离，不能把固定响应留在生产路径；
+- 请求字段只能在 provider 支持后发送；响应字段和 enum 必须覆盖 unknown/版本不兼容；
 - 请求层必须统一处理 base URL、超时、取消、错误码、权限拒绝和版本不兼容；
 - 前端不直接调用 connectors，也不替后端决定租户、角色、权限或审计策略。
+
+dirty/floating sibling 只能用于本地候选验证，不能作为发布来源。兄弟元仓存在时同时
+遵循 `../yijie/docs/dev/contract-first.md`。
 
 ## 认证与安全
 
@@ -91,6 +97,7 @@ make generate
 
 - 实现位于正确目录和职责边界，未把权限真相或后端规则搬到前端；
 - 契约、客户端和页面状态一致，没有新增重复 DTO 或固定生产响应；
+- 当 `contract-impact != none` 时按权威源路由：公共 API 提供契约不可变引用、consumer pin 与 unknown/失败 conformance；路由、会话/浏览器持久状态和 deployment interface 提供相应 config/schema/version 引用、升级/回滚兼容和受影响环境验证；不适用的 contracts 字段写 `N/A + 理由`；`none` 只需分类理由；
 - loading、empty、error、permission denied 和 ready 状态完整；
 - 高风险操作具备确认、后端授权和审计承接；
 - lint、测试和生产构建通过，界面在目标视口无文本或操作重叠；
