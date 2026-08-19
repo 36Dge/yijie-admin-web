@@ -1,0 +1,6 @@
+schema_version: 1
+kind: FeatureDeliveryApprovalTrust
+
+# Fail-closed bootstrap state. Register public keys through the governed key
+# initialization flow; private keys must remain outside every Git worktree.
+keys: []

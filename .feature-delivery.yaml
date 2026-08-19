@@ -1,0 +1,31 @@
+schema_version: 1
+kind: FeatureDeliveryProject
+project:
+  id: "yijie"
+  display_name: "易界 AI"
+paths:
+  framework_root: "docs/dev/codex-feature-delivery"
+  feature_root: "docs/features"
+  governance_root: .feature-delivery
+  repository_registry: .feature-delivery/repository-registry.yaml
+repository:
+  current_id: "yijie-admin-web"
+defaults:
+  profile: standard
+  delivery_target: local_engineering
+  data_classification: internal
+tooling:
+  package_manager: pnpm@11.7.0
+  commands:
+    test: pnpm test
+    lint: pnpm lint
+    build: pnpm build
+scm:
+  provider: git
+  primary_branch: "main"
+ci:
+  provider: github
+  required_gate: G3
+  status_context: feature-delivery/trusted-coverage-status
+identity:
+  default_actor_id: "36Dge"

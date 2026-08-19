@@ -1,0 +1,343 @@
+schema_version: 2
+kind: FeatureDeliveryPolicy
+
+policy:
+  id: codex-feature-delivery/v2
+  version: 2.0.0
+  effective_from: 2026-08-11
+
+enums:
+  gate_states:
+    - pending
+    - blocked
+    - ready
+    - in_review
+    - passed
+    - failed
+    - stale
+    - not_applicable
+  decision_states:
+    - blocked
+    - ready
+    - in_review
+    - passed
+    - failed
+    - stale
+  evidence_results:
+    - passed
+    - failed
+    - not_run
+  evidence_kinds:
+    - baseline
+    - dependency_probe
+    - boundary_validation
+    - unit_test
+    - integration_test
+    - contract_test
+    - e2e_test
+    - ai_eval
+    - static_analysis
+    - build
+    - review
+    - security_review
+    - data_review
+    - release_artifact
+    - rollback_rehearsal
+    - release_execution
+    - smoke
+    - observation
+    - owner_acceptance
+    - outcome_metric
+    - exception
+  # Authorization 只接受这些 canonical capabilities；禁止自由文本同义词。
+  authorization_capabilities:
+    - workspace_read
+    - workspace_edit
+    - local_command
+    - local_test
+    - local_build
+    - dependency_install
+    - network_read
+    - external_write
+    - real_sensitive_data
+    - paid_call
+    - deployment
+    - migration
+    - irreversible_operation
+  profiles:
+    - lite
+    - standard
+    - controlled
+  delivery_targets:
+    - local_engineering
+    - staging
+    - production
+  risk_levels:
+    - low
+    - medium
+    - high
+    - critical
+  data_classifications:
+    - public
+    - internal
+    - confidential
+    - restricted
+  size_classes:
+    - small
+    - medium
+    - large
+  boundary_types:
+    - generated_schema
+    - handwritten_protocol
+    - database_format
+    - runtime_third_party
+    - semantic_only
+  boundary_impacts:
+    - additive
+    - semantic
+    - breaking
+
+profiles:
+  lite:
+    allowed_risk: [low]
+    allowed_data: [public, internal]
+    allowed_size: [small]
+    maximum_repositories: 1
+    maximum_slices: 3
+    boundaries_allowed: false
+    required_artifacts:
+      - brief
+      - requirements
+      - impact_assessment
+      - test_plan
+      - implementation_plan
+      - verification_report
+  standard:
+    allowed_risk: [low, medium]
+    allowed_data: [public, internal, confidential]
+    allowed_size: [small, medium]
+    maximum_repositories: 4
+    maximum_slices: 6
+    boundaries_allowed: true
+    required_artifacts:
+      - brief
+      - requirements
+      - impact_assessment
+      - decisions_and_risks
+      - technical_design
+      - test_plan
+      - implementation_plan
+      - verification_report
+  controlled:
+    allowed_risk: [low, medium, high, critical]
+    allowed_data: [public, internal, confidential, restricted]
+    allowed_size: [small, medium, large]
+    maximum_repositories: 8
+    maximum_slices: 8
+    boundaries_allowed: true
+    required_artifacts:
+      - brief
+      - requirements
+      - impact_assessment
+      - decisions_and_risks
+      - technical_design
+      - test_plan
+      - implementation_plan
+      - verification_report
+
+profile_escalation:
+  controlled_risk_factors:
+    - contract_breaking
+    - database_migration
+    - restricted_data
+    - irreversible_operation
+    - regulated_data
+    - production_security_boundary
+  minimum_standard_risk_factors:
+    - contract_change
+    - external_side_effect
+    - ai_behavior_change
+    - public_unknown_consumers
+
+# Size is computed, not self-declared. A Feature is at least the first class whose
+# limits contain every measured dimension; exceeding medium means large.
+size_classification:
+  small:
+    maximum_repositories: 1
+    maximum_boundaries: 0
+    maximum_acceptance_criteria: 5
+    maximum_slices: 3
+    maximum_dependencies: 2
+    maximum_estimated_active_days: 3
+  medium:
+    maximum_repositories: 4
+    maximum_boundaries: 3
+    maximum_acceptance_criteria: 15
+    maximum_slices: 6
+    maximum_dependencies: 6
+    maximum_estimated_active_days: 10
+
+# Only the artifacts needed by the requested Gate must be complete. `strict`
+# additionally checks every applicable artifact and the generated summary.
+artifact_completion:
+  G0: [brief]
+  G1: [brief, requirements, impact_assessment]
+  G2: [brief, requirements, impact_assessment, decisions_and_risks, technical_design, test_plan, implementation_plan]
+  G2C: [contract_change_plan, boundary_spec]
+  G3: [brief, requirements, impact_assessment, decisions_and_risks, technical_design, test_plan, implementation_plan]
+  G4: [brief, requirements, impact_assessment, decisions_and_risks, technical_design, test_plan, implementation_plan, verification_report]
+  G5: [release_and_rollback]
+  G6: [release_and_rollback]
+
+profile_overrides:
+  controlled:
+    gates:
+      G2:
+        maximum_validity_hours: 24
+      G3:
+        required_evidence_kinds: [static_analysis]
+      G4:
+        required_evidence_kinds: [review, security_review]
+
+classification_overrides:
+  restricted:
+    gates:
+      G4:
+        required_evidence_kinds: [review, security_review, data_review]
+
+delivery_targets:
+  local_engineering:
+    terminal_gate: G4
+    required_gates: [G0, G1, G2, G2C, G3, G4]
+    policy_not_applicable_gates: [G5, G6]
+    additional_artifacts: []
+  staging:
+    terminal_gate: G6
+    required_gates: [G0, G1, G2, G2C, G3, G4, G5, G6]
+    policy_not_applicable_gates: []
+    additional_artifacts: [release_and_rollback]
+  production:
+    terminal_gate: G6
+    required_gates: [G0, G1, G2, G2C, G3, G4, G5, G6]
+    policy_not_applicable_gates: []
+    additional_artifacts: [release_and_rollback]
+
+# CI always revalidates every recorded `passed` approval. In addition, lifecycle
+# `active` means build authorization is current; `completed` means strict closure.
+lifecycle_enforcement:
+  proposed: null
+  active: G2
+  blocked: null
+  completed: terminal
+  cancelled: null
+
+gates:
+  G0:
+    name: Intake Accepted
+    scope: feature
+    prerequisites: []
+    required_roles_any: [requirement_owner, accountable_owner]
+    human_actor_required: true
+    subject_digests: [intake_digest]
+    required_evidence_kinds: []
+  G1:
+    name: Scope Ready
+    scope: feature
+    prerequisites: [G0]
+    required_roles_any: [requirement_owner, technical_owner, accountable_owner]
+    human_actor_required: true
+    subject_digests: [scope_digest]
+    required_evidence_kinds: []
+  G2:
+    name: Build Authorized
+    scope: feature
+    prerequisites: [G1]
+    required_roles_any: [technical_owner, accountable_owner]
+    human_actor_required: true
+    subject_digests: [build_digest]
+    required_evidence_kinds: [baseline]
+    authorization_required: true
+    valid_until_required: true
+    maximum_validity_hours: 168
+    # 有效 capability = packet.allowed_actions ∩ permitted_capabilities；
+    # prohibited_capabilities 还必须完整出现在 packet.excluded_actions。
+    permitted_capabilities: [workspace_read, workspace_edit, local_command, local_test, local_build, dependency_install, network_read]
+    prohibited_capabilities: [external_write, real_sensitive_data, paid_call, deployment, migration, irreversible_operation]
+    required_excluded_actions: [external_write, real_sensitive_data, paid_call, deployment, migration, irreversible_operation]
+    required_reauthorize_on: [scope_change, subject_change, external_write, real_sensitive_data, paid_call, deployment, migration, irreversible_operation, expiry]
+    authorization_fields: [instances, repositories, paths, base_refs, environment, data_classification, budget, allowed_actions, excluded_actions, stop_conditions, required_evidence, reauthorize_on]
+    authorization_required_evidence: [baseline, test, review]
+  G2C:
+    name: Boundary Ready
+    scope: boundary
+    prerequisites: [G2]
+    required_roles_any: [technical_owner, contract_owner, accountable_owner]
+    human_actor_required: true
+    subject_digests: [boundary_digest]
+    required_evidence_kinds: [boundary_validation]
+  G3:
+    name: Slice Accepted
+    scope: slice
+    # G3 means the current Slice's declared `depends_on` G3 instances.
+    prerequisites: [G2, G2C, G3]
+    required_roles_any: [technical_owner, verifier, accountable_owner]
+    human_actor_required: true
+    subject_digests: [slice_digest]
+    subject_fields: [code_refs]
+    required_evidence_groups:
+      - [unit_test, integration_test, contract_test, e2e_test, ai_eval]
+    authorization_reference_required: true
+  G4:
+    name: Engineering Complete
+    scope: feature
+    prerequisites: [G2, G2C, G3]
+    required_roles_any: [reviewer, technical_owner, accountable_owner]
+    human_actor_required: true
+    subject_digests: [engineering_digest]
+    subject_fields: [code_refs]
+    required_evidence_kinds: [review]
+    required_evidence_groups:
+      - [unit_test, integration_test, contract_test, e2e_test, ai_eval]
+  G5:
+    name: Release Authorized
+    scope: feature
+    prerequisites: [G4]
+    required_roles_any: [release_owner, accountable_owner]
+    subject_digests: [release_digest]
+    required_evidence_kinds: [release_artifact, rollback_rehearsal]
+    human_actor_required: true
+    authorization_required: true
+    valid_until_required: true
+    maximum_validity_hours: 24
+    permitted_capabilities: [deployment]
+    prohibited_capabilities: [external_write, real_sensitive_data, paid_call, migration, irreversible_operation]
+    required_excluded_actions: [external_write, real_sensitive_data, paid_call, migration, irreversible_operation]
+    required_reauthorize_on: [scope_change, artifact_change, environment_change, rollback_change, expiry]
+    required_allowed_actions: [deployment]
+    authorization_fields: [instances, environment, account, data_classification, budget, allowed_actions, stop_conditions, required_evidence, reauthorize_on]
+    authorization_required_evidence: [release_execution, smoke, observation, owner_acceptance_or_outcome_metric]
+    subject_fields: [code_refs, artifact_refs, engineering_decision_ref, environment_ref, account_ref, rollback_ref]
+    account_bound_evidence_kinds: [release_artifact, rollback_rehearsal]
+  G6:
+    name: Outcome Verified
+    scope: feature
+    prerequisites: [G5]
+    required_roles_any: [requirement_owner, release_owner, accountable_owner]
+    human_actor_required: true
+    subject_digests: [release_digest]
+    subject_fields: [code_refs, artifact_refs, engineering_decision_ref, environment_ref, account_ref]
+    required_evidence_kinds: [release_execution, smoke, observation]
+    required_evidence_groups:
+      - [owner_acceptance, outcome_metric]
+    post_g5_evidence_kinds: [release_execution, smoke, observation, owner_acceptance, outcome_metric]
+    post_g5_evidence_order:
+      - before: release_execution
+        after: [smoke]
+      - before: smoke
+        after: [observation, owner_acceptance, outcome_metric]
+
+severity:
+  P0: "可能造成安全失守、不可逆数据损坏、广泛生产中断或越权；必须阻断。"
+  P1: "可能造成主要行为错误、契约破坏、数据不一致或关键验证缺失；必须阻断。"
+  P2: "有明确影响但存在安全绕行；必须记录 Owner、期限和跟踪项。"
+  P3: "低影响改进；可排期，不影响当前 Gate。"

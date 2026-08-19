@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-feature-delivery:schema:approval-trust:v1",
+  "title": "Feature Delivery approval trust root",
+  "type": "object",
+  "required": ["schema_version", "kind", "keys"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "FeatureDeliveryApprovalTrust" },
+    "keys": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/key" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1, "pattern": ".*\\S.*" },
+    "uniqueNonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "key": {
+      "type": "object",
+      "required": ["id", "actor", "roles", "gates", "profiles", "targets", "public_key_pem", "status", "valid_from", "valid_until"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+        "actor": { "$ref": "#/$defs/nonEmptyString" },
+        "roles": { "$ref": "#/$defs/uniqueNonEmptyStrings" },
+        "gates": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["G0", "G1", "G2", "G2C", "G3", "G4", "G5", "G6"] }
+        },
+        "profiles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["lite", "standard", "controlled"] }
+        },
+        "targets": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["local_engineering", "staging", "production"] }
+        },
+        "public_key_pem": { "type": "string", "pattern": "^-----BEGIN PUBLIC KEY-----[\\s\\S]+-----END PUBLIC KEY-----\\n?$" },
+        "status": { "enum": ["active", "revoked"] },
+        "valid_from": { "type": "string", "format": "date-time" },
+        "valid_until": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "string", "format": "date-time" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

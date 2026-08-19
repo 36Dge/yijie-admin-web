@@ -2,6 +2,18 @@
 name = "yijie-admin-web"
 stack = "Vue 3 + Vite + TypeScript + Pinia + Vue Router"
 
+[codex]
+read_before_work = [
+  "README.md",
+  "AGENTS.md",
+  "CONTRIBUTING.md",
+  "SECURITY.md",
+  "docs/dev/codex-feature-delivery/README.md",
+  "docs/dev/codex-feature-delivery/HANDBOOK.md"
+]
+
 [rules]
 contract_first = true
 no_platform_tokens_in_frontend = true
+feature_delivery_v2 = true
+canonical_actor = "36Dge"

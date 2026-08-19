@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-feature-delivery:schema:repository-registry:v1",
+  "title": "Feature Delivery repository registry",
+  "type": "object",
+  "required": ["schema_version", "kind", "repositories"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "FeatureDeliveryRepositoryRegistry" },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/repository" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+    "repository": {
+      "type": "object",
+      "required": ["id", "name", "url", "root", "kind"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+        "url": { "type": "string", "minLength": 1, "pattern": "^[^\\s\\u0000]+$" },
+        "root": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["current", "managed", "external"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "current" } }, "required": ["kind"] },
+          "then": { "properties": { "root": { "const": "." } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "managed" } }, "required": ["kind"] },
+          "then": {
+            "properties": {
+              "root": {
+                "type": "string",
+                "pattern": "^(?!(?:.*\\/)?(?:\\.{1,2}|\\.git)(?:\\/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "external" } }, "required": ["kind"] },
+          "then": {
+            "properties": {
+              "root": { "type": "string", "pattern": "^\\.\\./[A-Za-z0-9][A-Za-z0-9._-]*$" }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}
