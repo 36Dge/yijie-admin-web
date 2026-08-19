@@ -1,0 +1,571 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-feature-delivery:schema:gate-policy:v2",
+  "title": "Codex Feature Delivery v2 gate policy",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "policy",
+    "enums",
+    "profiles",
+    "profile_escalation",
+    "size_classification",
+    "artifact_completion",
+    "profile_overrides",
+    "classification_overrides",
+    "delivery_targets",
+    "lifecycle_enforcement",
+    "gates",
+    "severity"
+  ],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "kind": { "const": "FeatureDeliveryPolicy" },
+    "policy": {
+      "type": "object",
+      "required": ["id", "version", "effective_from"],
+      "properties": {
+        "id": { "const": "codex-feature-delivery/v2" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "effective_from": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+      },
+      "additionalProperties": false
+    },
+    "enums": { "$ref": "#/$defs/enums" },
+    "profiles": { "$ref": "#/$defs/profiles" },
+    "profile_escalation": { "$ref": "#/$defs/profileEscalation" },
+    "size_classification": { "$ref": "#/$defs/sizeClassification" },
+    "artifact_completion": { "$ref": "#/$defs/artifactCompletion" },
+    "profile_overrides": { "$ref": "#/$defs/profileOverrides" },
+    "classification_overrides": { "$ref": "#/$defs/classificationOverrides" },
+    "delivery_targets": { "$ref": "#/$defs/deliveryTargets" },
+    "lifecycle_enforcement": { "$ref": "#/$defs/lifecycleEnforcement" },
+    "gates": { "$ref": "#/$defs/gates" },
+    "severity": { "$ref": "#/$defs/severity" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "enums": {
+      "type": "object",
+      "required": [
+        "gate_states",
+        "decision_states",
+        "evidence_results",
+        "evidence_kinds",
+        "authorization_capabilities",
+        "profiles",
+        "delivery_targets",
+        "risk_levels",
+        "data_classifications",
+        "size_classes",
+        "boundary_types",
+        "boundary_impacts"
+      ],
+      "properties": {
+        "gate_states": {
+          "type": "array",
+          "minItems": 8,
+          "uniqueItems": true,
+          "items": { "enum": ["pending", "blocked", "ready", "in_review", "passed", "failed", "stale", "not_applicable"] }
+        },
+        "decision_states": {
+          "type": "array",
+          "minItems": 6,
+          "uniqueItems": true,
+          "items": { "enum": ["blocked", "ready", "in_review", "passed", "failed", "stale"] }
+        },
+        "evidence_results": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["passed", "failed", "not_run"] }
+        },
+        "evidence_kinds": {
+          "type": "array",
+          "minItems": 21,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "baseline",
+              "dependency_probe",
+              "boundary_validation",
+              "unit_test",
+              "integration_test",
+              "contract_test",
+              "e2e_test",
+              "ai_eval",
+              "static_analysis",
+              "build",
+              "review",
+              "security_review",
+              "data_review",
+              "release_artifact",
+              "rollback_rehearsal",
+              "release_execution",
+              "smoke",
+              "observation",
+              "owner_acceptance",
+              "outcome_metric",
+              "exception"
+            ]
+          }
+        },
+        "authorization_capabilities": {
+          "type": "array",
+          "minItems": 13,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "workspace_read",
+              "workspace_edit",
+              "local_command",
+              "local_test",
+              "local_build",
+              "dependency_install",
+              "network_read",
+              "external_write",
+              "real_sensitive_data",
+              "paid_call",
+              "deployment",
+              "migration",
+              "irreversible_operation"
+            ]
+          }
+        },
+        "profiles": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["lite", "standard", "controlled"] }
+        },
+        "delivery_targets": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["local_engineering", "staging", "production"] }
+        },
+        "risk_levels": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["low", "medium", "high", "critical"] }
+        },
+        "data_classifications": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["public", "internal", "confidential", "restricted"] }
+        },
+        "size_classes": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["small", "medium", "large"] }
+        },
+        "boundary_types": {
+          "type": "array",
+          "minItems": 5,
+          "uniqueItems": true,
+          "items": { "enum": ["generated_schema", "handwritten_protocol", "database_format", "runtime_third_party", "semantic_only"] }
+        },
+        "boundary_impacts": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["additive", "semantic", "breaking"] }
+        }
+      },
+      "additionalProperties": false
+    },
+    "profiles": {
+      "type": "object",
+      "required": ["lite", "standard", "controlled"],
+      "properties": {
+        "lite": {
+          "type": "object",
+          "required": ["allowed_risk", "allowed_data", "allowed_size", "maximum_repositories", "maximum_slices", "boundaries_allowed", "required_artifacts"],
+          "properties": {
+            "allowed_risk": { "const": ["low"] },
+            "allowed_data": { "const": ["public", "internal"] },
+            "allowed_size": { "const": ["small"] },
+            "maximum_repositories": { "const": 1 },
+            "maximum_slices": { "const": 3 },
+            "boundaries_allowed": { "const": false },
+            "required_artifacts": { "const": ["brief", "requirements", "impact_assessment", "test_plan", "implementation_plan", "verification_report"] }
+          },
+          "additionalProperties": false
+        },
+        "standard": {
+          "type": "object",
+          "required": ["allowed_risk", "allowed_data", "allowed_size", "maximum_repositories", "maximum_slices", "boundaries_allowed", "required_artifacts"],
+          "properties": {
+            "allowed_risk": { "const": ["low", "medium"] },
+            "allowed_data": { "const": ["public", "internal", "confidential"] },
+            "allowed_size": { "const": ["small", "medium"] },
+            "maximum_repositories": { "const": 4 },
+            "maximum_slices": { "const": 6 },
+            "boundaries_allowed": { "const": true },
+            "required_artifacts": { "const": ["brief", "requirements", "impact_assessment", "decisions_and_risks", "technical_design", "test_plan", "implementation_plan", "verification_report"] }
+          },
+          "additionalProperties": false
+        },
+        "controlled": {
+          "type": "object",
+          "required": ["allowed_risk", "allowed_data", "allowed_size", "maximum_repositories", "maximum_slices", "boundaries_allowed", "required_artifacts"],
+          "properties": {
+            "allowed_risk": { "const": ["low", "medium", "high", "critical"] },
+            "allowed_data": { "const": ["public", "internal", "confidential", "restricted"] },
+            "allowed_size": { "const": ["small", "medium", "large"] },
+            "maximum_repositories": { "const": 8 },
+            "maximum_slices": { "const": 8 },
+            "boundaries_allowed": { "const": true },
+            "required_artifacts": { "const": ["brief", "requirements", "impact_assessment", "decisions_and_risks", "technical_design", "test_plan", "implementation_plan", "verification_report"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "profileEscalation": {
+      "type": "object",
+      "required": ["controlled_risk_factors", "minimum_standard_risk_factors"],
+      "properties": {
+        "controlled_risk_factors": { "const": ["contract_breaking", "database_migration", "restricted_data", "irreversible_operation", "regulated_data", "production_security_boundary"] },
+        "minimum_standard_risk_factors": { "const": ["contract_change", "external_side_effect", "ai_behavior_change", "public_unknown_consumers"] }
+      },
+      "additionalProperties": false
+    },
+    "sizeLimit": {
+      "type": "object",
+      "required": ["maximum_repositories", "maximum_boundaries", "maximum_acceptance_criteria", "maximum_slices", "maximum_dependencies", "maximum_estimated_active_days"],
+      "properties": {
+        "maximum_repositories": { "type": "integer", "minimum": 0 },
+        "maximum_boundaries": { "type": "integer", "minimum": 0 },
+        "maximum_acceptance_criteria": { "type": "integer", "minimum": 1 },
+        "maximum_slices": { "type": "integer", "minimum": 1 },
+        "maximum_dependencies": { "type": "integer", "minimum": 0 },
+        "maximum_estimated_active_days": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "sizeClassification": {
+      "type": "object",
+      "required": ["small", "medium"],
+      "properties": {
+        "small": { "$ref": "#/$defs/sizeLimit" },
+        "medium": { "$ref": "#/$defs/sizeLimit" }
+      },
+      "additionalProperties": false
+    },
+    "artifactCompletion": {
+      "type": "object",
+      "required": ["G0", "G1", "G2", "G2C", "G3", "G4", "G5", "G6"],
+      "properties": {
+        "G0": { "const": ["brief"] },
+        "G1": { "const": ["brief", "requirements", "impact_assessment"] },
+        "G2": { "const": ["brief", "requirements", "impact_assessment", "decisions_and_risks", "technical_design", "test_plan", "implementation_plan"] },
+        "G2C": { "const": ["contract_change_plan", "boundary_spec"] },
+        "G3": { "const": ["brief", "requirements", "impact_assessment", "decisions_and_risks", "technical_design", "test_plan", "implementation_plan"] },
+        "G4": { "const": ["brief", "requirements", "impact_assessment", "decisions_and_risks", "technical_design", "test_plan", "implementation_plan", "verification_report"] },
+        "G5": { "const": ["release_and_rollback"] },
+        "G6": { "const": ["release_and_rollback"] }
+      },
+      "additionalProperties": false
+    },
+    "profileOverrides": {
+      "type": "object",
+      "required": ["controlled"],
+      "properties": {
+        "controlled": {
+          "type": "object",
+          "required": ["gates"],
+          "properties": {
+            "gates": {
+              "type": "object",
+              "required": ["G2", "G3", "G4"],
+              "properties": {
+                "G2": {
+                  "type": "object",
+                  "required": ["maximum_validity_hours"],
+                  "properties": { "maximum_validity_hours": { "const": 24 } },
+                  "additionalProperties": false
+                },
+                "G3": {
+                  "type": "object",
+                  "required": ["required_evidence_kinds"],
+                  "properties": { "required_evidence_kinds": { "const": ["static_analysis"] } },
+                  "additionalProperties": false
+                },
+                "G4": {
+                  "type": "object",
+                  "required": ["required_evidence_kinds"],
+                  "properties": { "required_evidence_kinds": { "const": ["review", "security_review"] } },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "classificationOverrides": {
+      "type": "object",
+      "required": ["restricted"],
+      "properties": {
+        "restricted": {
+          "type": "object",
+          "required": ["gates"],
+          "properties": {
+            "gates": {
+              "type": "object",
+              "required": ["G4"],
+              "properties": {
+                "G4": {
+                  "type": "object",
+                  "required": ["required_evidence_kinds"],
+                  "properties": { "required_evidence_kinds": { "const": ["review", "security_review", "data_review"] } },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "deliveryTargets": {
+      "type": "object",
+      "required": ["local_engineering", "staging", "production"],
+      "properties": {
+        "local_engineering": {
+          "type": "object",
+          "required": ["terminal_gate", "required_gates", "policy_not_applicable_gates", "additional_artifacts"],
+          "properties": {
+            "terminal_gate": { "const": "G4" },
+            "required_gates": { "const": ["G0", "G1", "G2", "G2C", "G3", "G4"] },
+            "policy_not_applicable_gates": { "const": ["G5", "G6"] },
+            "additional_artifacts": { "const": [] }
+          },
+          "additionalProperties": false
+        },
+        "staging": {
+          "type": "object",
+          "required": ["terminal_gate", "required_gates", "policy_not_applicable_gates", "additional_artifacts"],
+          "properties": {
+            "terminal_gate": { "const": "G6" },
+            "required_gates": { "const": ["G0", "G1", "G2", "G2C", "G3", "G4", "G5", "G6"] },
+            "policy_not_applicable_gates": { "const": [] },
+            "additional_artifacts": { "const": ["release_and_rollback"] }
+          },
+          "additionalProperties": false
+        },
+        "production": {
+          "type": "object",
+          "required": ["terminal_gate", "required_gates", "policy_not_applicable_gates", "additional_artifacts"],
+          "properties": {
+            "terminal_gate": { "const": "G6" },
+            "required_gates": { "const": ["G0", "G1", "G2", "G2C", "G3", "G4", "G5", "G6"] },
+            "policy_not_applicable_gates": { "const": [] },
+            "additional_artifacts": { "const": ["release_and_rollback"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "lifecycleEnforcement": {
+      "type": "object",
+      "required": ["proposed", "active", "blocked", "completed", "cancelled"],
+      "properties": {
+        "proposed": { "type": "null" },
+        "active": { "const": "G2" },
+        "blocked": { "type": "null" },
+        "completed": { "const": "terminal" },
+        "cancelled": { "type": "null" }
+      },
+      "additionalProperties": false
+    },
+    "gates": {
+      "type": "object",
+      "required": ["G0", "G1", "G2", "G2C", "G3", "G4", "G5", "G6"],
+      "properties": {
+        "G0": { "$ref": "#/$defs/gateG0" },
+        "G1": { "$ref": "#/$defs/gateG1" },
+        "G2": { "$ref": "#/$defs/gateG2" },
+        "G2C": { "$ref": "#/$defs/gateG2C" },
+        "G3": { "$ref": "#/$defs/gateG3" },
+        "G4": { "$ref": "#/$defs/gateG4" },
+        "G5": { "$ref": "#/$defs/gateG5" },
+        "G6": { "$ref": "#/$defs/gateG6" }
+      },
+      "additionalProperties": false
+    },
+    "gateG0": {
+      "type": "object",
+      "required": ["name", "scope", "prerequisites", "required_roles_any", "human_actor_required", "subject_digests", "required_evidence_kinds"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "scope": { "const": "feature" },
+        "prerequisites": { "const": [] },
+        "required_roles_any": { "const": ["requirement_owner", "accountable_owner"] },
+        "human_actor_required": { "const": true },
+        "subject_digests": { "const": ["intake_digest"] },
+        "required_evidence_kinds": { "const": [] }
+      },
+      "additionalProperties": false
+    },
+    "gateG1": {
+      "type": "object",
+      "required": ["name", "scope", "prerequisites", "required_roles_any", "human_actor_required", "subject_digests", "required_evidence_kinds"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "scope": { "const": "feature" },
+        "prerequisites": { "const": ["G0"] },
+        "required_roles_any": { "const": ["requirement_owner", "technical_owner", "accountable_owner"] },
+        "human_actor_required": { "const": true },
+        "subject_digests": { "const": ["scope_digest"] },
+        "required_evidence_kinds": { "const": [] }
+      },
+      "additionalProperties": false
+    },
+    "gateG2": {
+      "type": "object",
+      "required": ["name", "scope", "prerequisites", "required_roles_any", "human_actor_required", "subject_digests", "required_evidence_kinds", "authorization_required", "valid_until_required", "maximum_validity_hours", "permitted_capabilities", "prohibited_capabilities", "required_excluded_actions", "required_reauthorize_on", "authorization_fields", "authorization_required_evidence"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "scope": { "const": "feature" },
+        "prerequisites": { "const": ["G1"] },
+        "required_roles_any": { "const": ["technical_owner", "accountable_owner"] },
+        "human_actor_required": { "const": true },
+        "subject_digests": { "const": ["build_digest"] },
+        "required_evidence_kinds": { "const": ["baseline"] },
+        "authorization_required": { "const": true },
+        "valid_until_required": { "const": true },
+        "maximum_validity_hours": { "const": 168 },
+        "permitted_capabilities": { "const": ["workspace_read", "workspace_edit", "local_command", "local_test", "local_build", "dependency_install", "network_read"] },
+        "prohibited_capabilities": { "const": ["external_write", "real_sensitive_data", "paid_call", "deployment", "migration", "irreversible_operation"] },
+        "required_excluded_actions": { "const": ["external_write", "real_sensitive_data", "paid_call", "deployment", "migration", "irreversible_operation"] },
+        "required_reauthorize_on": { "const": ["scope_change", "subject_change", "external_write", "real_sensitive_data", "paid_call", "deployment", "migration", "irreversible_operation", "expiry"] },
+        "authorization_fields": { "const": ["instances", "repositories", "paths", "base_refs", "environment", "data_classification", "budget", "allowed_actions", "excluded_actions", "stop_conditions", "required_evidence", "reauthorize_on"] },
+        "authorization_required_evidence": { "const": ["baseline", "test", "review"] }
+      },
+      "additionalProperties": false
+    },
+    "gateG2C": {
+      "type": "object",
+      "required": ["name", "scope", "prerequisites", "required_roles_any", "human_actor_required", "subject_digests", "required_evidence_kinds"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "scope": { "const": "boundary" },
+        "prerequisites": { "const": ["G2"] },
+        "required_roles_any": { "const": ["technical_owner", "contract_owner", "accountable_owner"] },
+        "human_actor_required": { "const": true },
+        "subject_digests": { "const": ["boundary_digest"] },
+        "required_evidence_kinds": { "const": ["boundary_validation"] }
+      },
+      "additionalProperties": false
+    },
+    "gateG3": {
+      "type": "object",
+      "required": ["name", "scope", "prerequisites", "required_roles_any", "human_actor_required", "subject_digests", "subject_fields", "required_evidence_groups", "authorization_reference_required"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "scope": { "const": "slice" },
+        "prerequisites": { "const": ["G2", "G2C", "G3"] },
+        "required_roles_any": { "const": ["technical_owner", "verifier", "accountable_owner"] },
+        "human_actor_required": { "const": true },
+        "subject_digests": { "const": ["slice_digest"] },
+        "subject_fields": { "const": ["code_refs"] },
+        "required_evidence_groups": { "const": [["unit_test", "integration_test", "contract_test", "e2e_test", "ai_eval"]] },
+        "authorization_reference_required": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "gateG4": {
+      "type": "object",
+      "required": ["name", "scope", "prerequisites", "required_roles_any", "human_actor_required", "subject_digests", "subject_fields", "required_evidence_kinds", "required_evidence_groups"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "scope": { "const": "feature" },
+        "prerequisites": { "const": ["G2", "G2C", "G3"] },
+        "required_roles_any": { "const": ["reviewer", "technical_owner", "accountable_owner"] },
+        "human_actor_required": { "const": true },
+        "subject_digests": { "const": ["engineering_digest"] },
+        "subject_fields": { "const": ["code_refs"] },
+        "required_evidence_kinds": { "const": ["review"] },
+        "required_evidence_groups": { "const": [["unit_test", "integration_test", "contract_test", "e2e_test", "ai_eval"]] }
+      },
+      "additionalProperties": false
+    },
+    "gateG5": {
+      "type": "object",
+      "required": ["name", "scope", "prerequisites", "required_roles_any", "human_actor_required", "subject_digests", "subject_fields", "required_evidence_kinds", "authorization_required", "valid_until_required", "maximum_validity_hours", "permitted_capabilities", "prohibited_capabilities", "required_excluded_actions", "required_reauthorize_on", "required_allowed_actions", "authorization_fields", "authorization_required_evidence", "account_bound_evidence_kinds"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "scope": { "const": "feature" },
+        "prerequisites": { "const": ["G4"] },
+        "required_roles_any": { "const": ["release_owner", "accountable_owner"] },
+        "human_actor_required": { "const": true },
+        "subject_digests": { "const": ["release_digest"] },
+        "subject_fields": { "const": ["code_refs", "artifact_refs", "engineering_decision_ref", "environment_ref", "account_ref", "rollback_ref"] },
+        "required_evidence_kinds": { "const": ["release_artifact", "rollback_rehearsal"] },
+        "authorization_required": { "const": true },
+        "valid_until_required": { "const": true },
+        "maximum_validity_hours": { "const": 24 },
+        "permitted_capabilities": { "const": ["deployment"] },
+        "prohibited_capabilities": { "const": ["external_write", "real_sensitive_data", "paid_call", "migration", "irreversible_operation"] },
+        "required_excluded_actions": { "const": ["external_write", "real_sensitive_data", "paid_call", "migration", "irreversible_operation"] },
+        "required_reauthorize_on": { "const": ["scope_change", "artifact_change", "environment_change", "rollback_change", "expiry"] },
+        "required_allowed_actions": { "const": ["deployment"] },
+        "authorization_fields": { "const": ["instances", "environment", "account", "data_classification", "budget", "allowed_actions", "stop_conditions", "required_evidence", "reauthorize_on"] },
+        "authorization_required_evidence": { "const": ["release_execution", "smoke", "observation", "owner_acceptance_or_outcome_metric"] },
+        "account_bound_evidence_kinds": { "const": ["release_artifact", "rollback_rehearsal"] }
+      },
+      "additionalProperties": false
+    },
+    "gateG6": {
+      "type": "object",
+      "required": ["name", "scope", "prerequisites", "required_roles_any", "human_actor_required", "subject_digests", "subject_fields", "required_evidence_kinds", "required_evidence_groups", "post_g5_evidence_kinds", "post_g5_evidence_order"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "scope": { "const": "feature" },
+        "prerequisites": { "const": ["G5"] },
+        "required_roles_any": { "const": ["requirement_owner", "release_owner", "accountable_owner"] },
+        "human_actor_required": { "const": true },
+        "subject_digests": { "const": ["release_digest"] },
+        "subject_fields": { "const": ["code_refs", "artifact_refs", "engineering_decision_ref", "environment_ref", "account_ref"] },
+        "required_evidence_kinds": { "const": ["release_execution", "smoke", "observation"] },
+        "required_evidence_groups": { "const": [["owner_acceptance", "outcome_metric"]] },
+        "post_g5_evidence_kinds": { "const": ["release_execution", "smoke", "observation", "owner_acceptance", "outcome_metric"] },
+        "post_g5_evidence_order": {
+          "const": [
+            { "before": "release_execution", "after": ["smoke"] },
+            { "before": "smoke", "after": ["observation", "owner_acceptance", "outcome_metric"] }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "severity": {
+      "type": "object",
+      "required": ["P0", "P1", "P2", "P3"],
+      "properties": {
+        "P0": { "$ref": "#/$defs/nonEmptyString" },
+        "P1": { "$ref": "#/$defs/nonEmptyString" },
+        "P2": { "$ref": "#/$defs/nonEmptyString" },
+        "P3": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

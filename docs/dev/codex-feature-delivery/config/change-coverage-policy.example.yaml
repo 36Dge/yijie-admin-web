@@ -1,0 +1,63 @@
+schema_version: 1
+kind: FeatureChangeCoveragePolicy
+
+# Keep this value equal to `.feature-delivery.yaml.repository.current_id`.
+repository_id: example-app
+# Keep these paths equal to `.feature-delivery.yaml.paths.feature_root` and
+# `.feature-delivery.yaml.paths.framework_root` respectively.
+feature_root: docs/features
+required_gate: G3
+
+# Rules are repository-relative. Runtime trust, policy, schema and executable
+# verifier changes require a protected out-of-band digest. Adapt CI paths to the
+# selected provider before enabling the required status check.
+protected_paths:
+  - path: .github/workflows
+    match: prefix
+    mode: external_digest_only
+  - path: .feature-delivery
+    match: prefix
+    mode: external_digest_only
+  - path: docs/dev/codex-feature-delivery
+    match: prefix
+    mode: controlled_g4_or_exemption
+  - path: .feature-delivery.yaml
+    match: exact
+    mode: external_digest_only
+  - path: .feature-delivery/approval-trust.yaml
+    match: exact
+    mode: external_digest_only
+  - path: .feature-delivery/change-coverage-policy.yaml
+    match: exact
+    mode: external_digest_only
+  - path: .feature-delivery/legacy-v1-allowlist.txt
+    match: exact
+    mode: external_digest_only
+  - path: .feature-delivery/repository-registry.yaml
+    match: exact
+    mode: external_digest_only
+  - path: docs/dev/codex-feature-delivery/gate-policy.yaml
+    match: exact
+    mode: external_digest_only
+  - path: docs/dev/codex-feature-delivery/policies
+    match: prefix
+    mode: external_digest_only
+  - path: docs/dev/codex-feature-delivery/schemas
+    match: prefix
+    mode: external_digest_only
+  - path: docs/dev/codex-feature-delivery/scripts
+    match: prefix
+    mode: external_digest_only
+  - path: docs/dev/codex-feature-delivery/package.json
+    match: exact
+    mode: external_digest_only
+  - path: docs/dev/codex-feature-delivery/package-lock.json
+    match: exact
+    mode: external_digest_only
+  - path: docs/dev/codex-feature-delivery/RELEASE-MANIFEST.json
+    match: exact
+    mode: external_digest_only
+
+# Project initialization does not grant itself an exemption. If bootstrap is
+# authorized, create a project-specific, expiring, exact change-set record.
+exemptions: []

@@ -1,0 +1,52 @@
+schema_version: 1
+kind: FeatureChangeCoveragePolicy
+repository_id: "yijie-admin-web"
+feature_root: "docs/features"
+required_gate: G3
+protected_paths:
+  - path: ".github/workflows"
+    match: prefix
+    mode: external_digest_only
+  - path: ".feature-delivery.yaml"
+    match: exact
+    mode: external_digest_only
+  - path: "docs/dev/codex-feature-delivery"
+    match: prefix
+    mode: controlled_g4_or_exemption
+  - path: "docs/dev/codex-feature-delivery/gate-policy.yaml"
+    match: exact
+    mode: external_digest_only
+  - path: "docs/dev/codex-feature-delivery/package.json"
+    match: exact
+    mode: external_digest_only
+  - path: "docs/dev/codex-feature-delivery/package-lock.json"
+    match: exact
+    mode: external_digest_only
+  - path: "docs/dev/codex-feature-delivery/RELEASE-MANIFEST.json"
+    match: exact
+    mode: external_digest_only
+  - path: "docs/dev/codex-feature-delivery/policies"
+    match: prefix
+    mode: external_digest_only
+  - path: "docs/dev/codex-feature-delivery/schemas"
+    match: prefix
+    mode: external_digest_only
+  - path: "docs/dev/codex-feature-delivery/scripts"
+    match: prefix
+    mode: external_digest_only
+  - path: ".feature-delivery"
+    match: prefix
+    mode: controlled_g4_or_exemption
+  - path: ".feature-delivery/approval-trust.yaml"
+    match: exact
+    mode: external_digest_only
+  - path: ".feature-delivery/change-coverage-policy.yaml"
+    match: exact
+    mode: external_digest_only
+  - path: ".feature-delivery/legacy-v1-allowlist.txt"
+    match: exact
+    mode: external_digest_only
+  - path: ".feature-delivery/repository-registry.yaml"
+    match: exact
+    mode: external_digest_only
+exemptions: []

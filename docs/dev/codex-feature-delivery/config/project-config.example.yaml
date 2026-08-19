@@ -1,0 +1,42 @@
+schema_version: 1
+kind: FeatureDeliveryProject
+
+# Copy this file to the repository root as `.feature-delivery.yaml`, then replace
+# the example identity and paths with values owned by the new project.
+project:
+  id: example-app
+  display_name: Example App
+
+paths:
+  framework_root: docs/dev/codex-feature-delivery
+  feature_root: docs/features
+  governance_root: .feature-delivery
+  repository_registry: .feature-delivery/repository-registry.yaml
+
+repository:
+  current_id: example-app
+
+defaults:
+  profile: standard
+  delivery_target: local_engineering
+  data_classification: internal
+
+tooling:
+  package_manager: null
+  commands:
+    test: null
+    lint: null
+    build: null
+
+scm:
+  provider: git
+  primary_branch: main
+
+ci:
+  provider: github
+  required_gate: G3
+  status_context: feature-delivery/trusted-coverage-status
+
+identity:
+  # Use a stable organization identity, not a mutable display name.
+  default_actor_id: example.owner

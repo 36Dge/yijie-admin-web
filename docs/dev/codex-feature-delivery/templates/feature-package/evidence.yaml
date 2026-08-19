@@ -1,0 +1,41 @@
+schema_version: 2
+kind: EvidenceLedger
+feature_id: "{{FEATURE_ID}}"
+
+# Append-only。计划、预期结果和 NOT RUN 不能充当 Gate 证据。
+entries: []
+
+# Entry 结构示例（复制到 entries 后删除注释）：
+# - id: EV-{{FEATURE_ID}}-001
+#   kind: baseline
+#   recorded_at: "{{DATE}}T00:02:00Z"
+#   producer:
+#     id: "{{OWNER_ID}}"
+#     type: human
+#   subject:
+#     instance: feature
+#     repository: "{{REPOSITORY_ID}}"
+#     cwd: "{{REPOSITORY_SCOPE}}"
+#     code_sha: "0123456789abcdef0123456789abcdef01234567"
+#     base_sha: null
+#     environment_ref: local
+#     # G5/G6 使用精确目标账号；非发布 Evidence 为 null。
+#     account_ref: null
+#     # G6 release_execution/smoke/observation/acceptance 精确继承 G5 refs。
+#     artifact_refs: []
+#     acceptance_criteria: []
+#   execution:
+#     # Resolve these values from `.feature-delivery.yaml.tooling`; never invent
+#     # a package manager or command for a project that has not declared one.
+#     command: "{{TEST_COMMAND}}"
+#     tool: "{{PACKAGE_MANAGER}}"
+#     tool_version: "{{TOOL_VERSION}}"
+#     started_at: "{{DATE}}T00:00:00Z"
+#     finished_at: "{{DATE}}T00:01:00Z"
+#     exit_code: 0
+#     result: passed
+#   artifacts:
+#     - uri: "ci://run/123"
+#       digest: "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+#       retention_until: "{{DATE}}T23:59:59Z" # 必须覆盖引用它的 Decision 有效窗口；按实际窗口延长。
+#   notes: "基线验证"

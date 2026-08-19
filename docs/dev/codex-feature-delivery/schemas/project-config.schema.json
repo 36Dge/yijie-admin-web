@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-feature-delivery:schema:project-config:v1",
+  "title": "Feature Delivery project configuration",
+  "type": "object",
+  "required": ["schema_version", "kind", "project", "paths", "repository", "defaults", "tooling", "scm", "ci", "identity"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "FeatureDeliveryProject" },
+    "project": {
+      "type": "object",
+      "required": ["id", "display_name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "display_name": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "additionalProperties": false
+    },
+    "paths": {
+      "type": "object",
+      "required": ["framework_root", "feature_root", "governance_root", "repository_registry"],
+      "properties": {
+        "framework_root": { "$ref": "#/$defs/projectPath" },
+        "feature_root": { "$ref": "#/$defs/projectPath" },
+        "governance_root": { "$ref": "#/$defs/projectPath" },
+        "repository_registry": { "$ref": "#/$defs/projectPath" }
+      },
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "required": ["current_id"],
+      "properties": { "current_id": { "$ref": "#/$defs/id" } },
+      "additionalProperties": false
+    },
+    "defaults": {
+      "type": "object",
+      "required": ["profile", "delivery_target", "data_classification"],
+      "properties": {
+        "profile": { "enum": ["lite", "standard", "controlled"] },
+        "delivery_target": { "enum": ["local_engineering", "staging", "production"] },
+        "data_classification": { "enum": ["public", "internal", "confidential", "restricted"] }
+      },
+      "additionalProperties": false
+    },
+    "tooling": {
+      "type": "object",
+      "required": ["package_manager", "commands"],
+      "properties": {
+        "package_manager": { "type": ["string", "null"], "minLength": 1 },
+        "commands": {
+          "type": "object",
+          "required": ["test", "lint", "build"],
+          "properties": {
+            "test": { "$ref": "#/$defs/nullableCommand" },
+            "lint": { "$ref": "#/$defs/nullableCommand" },
+            "build": { "$ref": "#/$defs/nullableCommand" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "scm": {
+      "type": "object",
+      "required": ["provider", "primary_branch"],
+      "properties": {
+        "provider": { "const": "git" },
+        "primary_branch": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "additionalProperties": false
+    },
+    "ci": {
+      "type": "object",
+      "required": ["provider", "required_gate", "status_context"],
+      "properties": {
+        "provider": { "enum": ["github", "none"] },
+        "required_gate": { "enum": ["G3", "G4"] },
+        "status_context": { "const": "feature-delivery/trusted-coverage-status" }
+      },
+      "additionalProperties": false
+    },
+    "identity": {
+      "type": "object",
+      "required": ["default_actor_id"],
+      "properties": { "default_actor_id": { "$ref": "#/$defs/actorId" } },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1, "pattern": ".*\\S.*" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+    "actorId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._@:-]*$" },
+    "projectPath": {
+      "type": "string",
+      "pattern": "^(?!(?:.*\\/)?(?:\\.{1,2}|\\.git)(?:\\/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "nullableCommand": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "string", "minLength": 1, "pattern": ".*\\S.*" }
+      ]
+    }
+  }
+}

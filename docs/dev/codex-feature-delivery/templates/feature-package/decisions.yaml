@@ -1,0 +1,62 @@
+schema_version: 2
+kind: GateDecisionLedger
+feature_id: "{{FEATURE_ID}}"
+
+# Append-only。当前 Gate 状态由每个 gate + instance 的最新记录派生。
+# evaluator 只能计算 ELIGIBLE/BLOCKED；只有有效 passed 记录才是批准。
+entries: []
+
+# Entry 结构示例（先运行 checker --json 取得 digest）：
+# - id: DEC-{{FEATURE_ID}}-001
+#   sequence: 1
+#   gate: G0
+#   instance: feature
+#   state: passed
+#   actor:
+#     id: "{{OWNER_ID}}"
+#     type: human
+#   roles: [accountable_owner, requirement_owner]
+#   decided_at: "{{DATE}}T00:00:00Z"
+#   valid_until: null
+#   subject:
+#     # 每条决策独立保存 Package 绑定的内容寻址 policy digest；active policy 切换
+#     # 不改写本值，历史签名继续按 policies/<digest>.yaml 原始 bytes 复核。
+#     policy_digest: "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+#     declaration_digest: null
+#     intake_digest: "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+#     scope_digest: null
+#     build_digest: null
+#     boundary_digest: null
+#     slice_digest: null
+#     engineering_digest: null
+#     release_digest: null
+#     spec_digest: null
+#     # G3/G4 每个 ref 都绑定当前代码与共同审查基线：
+#     # code_refs: [{repository: "{{REPOSITORY_ID}}", sha: 0123456789abcdef0123456789abcdef01234567, base_sha: fedcba9876543210fedcba9876543210fedcba98}]
+#     code_refs: []
+#     artifact_refs: []
+#     engineering_decision_ref: null
+#     environment_ref: null
+#     account_ref: null
+#     rollback_ref: null
+#   evidence_refs: []
+#   authorization:
+#     instances: []
+#     repositories: []
+#     # paths 使用 canonical repository alias + repo 内相对路径；禁止绝对路径和 `..`。
+#     paths: [{repository: "{{REPOSITORY_ID}}", path: "{{REPOSITORY_SCOPE}}"}]
+#     base_refs: []
+#     environment: null
+#     account: null
+#     data_classification: null
+#     budget: {currency: null, maximum: null}
+#     allowed_actions: []
+#     excluded_actions: []
+#     stop_conditions: []
+#     required_evidence: []
+#     reauthorize_on: []
+#   # passed 必须由外部 trust root 中的 Ed25519 key 签名；先填 null，再由
+#   # sign-decision.mjs 在受保护的人类/CI 审批面生成完整 attestation。
+#   attestation: null
+#   rationale: "接受 Intake"
+#   supersedes: null

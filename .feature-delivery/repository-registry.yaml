@@ -1,0 +1,18 @@
+schema_version: 1
+kind: FeatureDeliveryRepositoryRegistry
+repositories:
+  - id: "yijie-admin-web"
+    name: "yijie-admin-web"
+    url: "https://github.com/36Dge/yijie-admin-web.git"
+    root: "."
+    kind: current
+  - id: yijie-api
+    name: yijie-api
+    url: https://github.com/36Dge/yijie-api.git
+    root: ../yijie-api
+    kind: external
+  - id: yijie-contracts
+    name: yijie-contracts
+    url: https://github.com/36Dge/yijie-contracts.git
+    root: ../yijie-contracts
+    kind: external

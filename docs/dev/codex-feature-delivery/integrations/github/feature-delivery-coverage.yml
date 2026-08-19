@@ -1,0 +1,133 @@
+name: Feature Delivery Trusted Coverage
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+# The event token is read-only. Commit status publication is isolated to a
+# dedicated GitHub App token minted inside a protected Environment.
+permissions:
+  contents: read
+
+concurrency:
+  group: feature-delivery-trusted-coverage-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  base-trusted:
+    if: ${{ !github.event.pull_request.draft }}
+    name: feature-delivery/trusted-coverage-status
+    runs-on: ubuntu-latest
+    # Initialization must replace this token with an Environment restricted to
+    # the protected target branch and authorized maintainers.
+    environment: __TRUSTED_ENVIRONMENT__
+    env:
+      CFD_FRAMEWORK_ROOT: __FRAMEWORK_ROOT__
+      CFD_FEATURE_ROOT: __FEATURE_ROOT__
+      CFD_REPOSITORY_ID: __REPOSITORY_ID__
+      CFD_COVERAGE_POLICY: .feature-delivery/change-coverage-policy.yaml
+      CFD_APPROVAL_TRUST_ROOT: .feature-delivery/approval-trust.yaml
+    steps:
+      # This short-lived token belongs to a dedicated GitHub App whose only
+      # repository permission is Commit statuses: write.
+      - name: Mint dedicated status publisher token
+        id: status_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          client-id: ${{ vars.CFD_STATUS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CFD_STATUS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-statuses: write
+
+      - name: Publish pending candidate commit status
+        id: status_pending
+        env:
+          GH_TOKEN: ${{ steps.status_token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --method POST "repos/${REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state=pending \
+            -f context="feature-delivery/trusted-coverage-status" \
+            -f description="base-trusted coverage is running" \
+            -f target_url="$RUN_URL"
+
+      # pull_request_target is safe here only because every executable, schema,
+      # policy and lockfile is loaded from the protected target-base commit. The
+      # candidate ref is fetched as Git objects and is never checked out or run.
+      - name: Check out the exact protected base commit
+        id: checkout_base
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Fetch candidate objects without checkout
+        id: candidate
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          actual_base_sha="$(git rev-parse --verify 'HEAD^{commit}')"
+          test "$actual_base_sha" = "$EXPECTED_BASE_SHA"
+          git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:refs/remotes/pull/candidate"
+          actual_head_sha="$(git rev-parse --verify 'refs/remotes/pull/candidate^{commit}')"
+          test "$actual_head_sha" = "$EXPECTED_HEAD_SHA"
+
+      - name: Set up the protected verifier runtime
+        id: setup_node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+
+      - name: Install protected-base verifier dependencies
+        id: install
+        run: (cd "$CFD_FRAMEWORK_ROOT" && npm ci --ignore-scripts)
+
+      - name: Verify changed-file coverage with protected-base code
+        id: verify
+        env:
+          FEATURE_DELIVERY_BASE: ${{ github.event.pull_request.base.sha }}
+          FEATURE_DELIVERY_HEAD: refs/remotes/pull/candidate
+          CFD_BOOTSTRAP_APPROVAL_DIGEST: ${{ vars.CFD_FEATURE_DELIVERY_BOOTSTRAP_DIGEST }}
+          CFD_FEATURE_DELIVERY_GOVERNANCE_DIGEST: ${{ vars.CFD_FEATURE_DELIVERY_GOVERNANCE_DIGEST }}
+        run: |
+          node "$CFD_FRAMEWORK_ROOT/scripts/check-changed-feature-coverage.mjs" \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --base "$FEATURE_DELIVERY_BASE" \
+            --head "$FEATURE_DELIVERY_HEAD" \
+            --repo-id "$CFD_REPOSITORY_ID" \
+            --feature-root "$CFD_FEATURE_ROOT" \
+            --policy "$CFD_COVERAGE_POLICY" \
+            --trust-root "$CFD_APPROVAL_TRUST_ROOT" \
+            --allow-policy-bootstrap
+
+      - name: Publish independent candidate commit status
+        if: ${{ always() && steps.status_token.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ steps.status_token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CHECKOUT_OUTCOME: ${{ steps.checkout_base.outcome }}
+          NODE_OUTCOME: ${{ steps.setup_node.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          CANDIDATE_OUTCOME: ${{ steps.candidate.outcome }}
+          PENDING_OUTCOME: ${{ steps.status_pending.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+        run: |
+          state=failure
+          description="base-trusted coverage failed"
+          if [[ "$CHECKOUT_OUTCOME" == success && "$NODE_OUTCOME" == success && "$INSTALL_OUTCOME" == success && "$CANDIDATE_OUTCOME" == success && "$PENDING_OUTCOME" == success && "$VERIFY_OUTCOME" == success ]]; then
+            state=success
+            description="base-trusted coverage passed"
+          fi
+          gh api --method POST "repos/${REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state="$state" \
+            -f context="feature-delivery/trusted-coverage-status" \
+            -f description="$description" \
+            -f target_url="$RUN_URL"

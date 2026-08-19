@@ -33,6 +33,10 @@ pnpm lint
 pnpm build
 ```
 
+## Feature Delivery v2
+
+新需求唯一入口是 [`docs/dev/codex-feature-delivery/`](docs/dev/codex-feature-delivery/README.md)。先从本仓 Git worktree 创建 `schema_version: 2` Package，owner 使用 `36Dge`；修改业务实现前完成 G0/G1/G2 和适用 G2C，逐 Slice 完成 G3，整体完成 G4。历史 v1 状态不能继承。普通 `web` CI 与 `feature-delivery/trusted-coverage-status` 都是远端准入条件。
+
 ## 安全要求
 
 Admin Web 不保存平台 token，不作为权限真相。权限、审批和审计必须由 `yijie-api` 提供。
